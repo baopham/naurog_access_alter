@@ -1,0 +1,3 @@
+name = "Access alter"
+core = 7.x
+files[] = access_alter.module

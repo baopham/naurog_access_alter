@@ -1,0 +1,67 @@
+<?php
+function access_alter_node_access_records($node) {
+
+  $grants = array();
+  $type = is_string($node) ? $node : $node->type;
+  // Get all the referenced fields and their settings
+  $nodeaccess_userreference = variable_get('nodeaccess_userreference', array());
+
+  // If the content type has a node access user reference
+  if (isset($nodeaccess_userreference[$type]) && !empty($nodeaccess_userreference[$type])) {
+    // Get the group's content access
+    $wrapper = entity_metadata_wrapper('node', $node);
+    $content_access = !empty($wrapper->{OG_CONTENT_ACCESS_FIELD}) ? $wrapper->{OG_CONTENT_ACCESS_FIELD}->value() : OG_CONTENT_ACCESS_DEFAULT;
+    // Don't do anything if the content access is public
+    if ($content_access != OG_CONTENT_ACCESS_PUBLIC) {
+      // Iterate through all the referenced fields
+      foreach ($nodeaccess_userreference[$type] as $field => $field_settings) {
+        foreach ($node->$field as $key => $val) {
+          if (isset($val[0]['target_id'])) {
+            $uid = $val[0]['target_id'];
+            $grants[] = array(
+              'realm' => 'custom_node_access_edit',
+              'gid' => $uid,
+              'grant_view' => isset($field_settings['referenced']['view']) ? 1 : 0,
+              'grant_update' => isset($field_settings['referenced']['update']) ? 1 : 0,
+              'grant_delete' => isset($field_settings['referenced']['delete']) ? 1 : 0,
+              'priority' => 1,
+            );
+          }
+        }
+      }
+    }
+
+  }
+  return $grants;
+}
+
+function access_alter_node_access_records_alter(&$grants, $node) {
+  // Get the group's content access
+  $wrapper = entity_metadata_wrapper('node', $node);
+  $content_access = !empty($wrapper->{OG_CONTENT_ACCESS_FIELD}) ? $wrapper->{OG_CONTENT_ACCESS_FIELD}->value() : OG_CONTENT_ACCESS_DEFAULT;
+
+  // Only alter if the content access is set to the group's default
+  if ($content_access == OG_CONTENT_ACCESS_DEFAULT) {
+    foreach ($grants as $key => $val) {
+      if (strpos($val['realm'], 'og_access') !== FALSE) {
+        $grants[$key]['priority'] = 1;
+        return;
+      }
+    }
+  }
+}
+
+function access_alter_node_grants($account, $op){
+  $grants = array();
+  //NAUR logic
+  $grants['custom_node_access_view'][] = $account->uid;
+  $grants['custom_node_access_edit'][] = $account->uid;
+  //and OG logic
+  if ($op == 'view' && $groups = og_get_entity_groups('user', $account)) {
+    foreach ($groups as $gid => $value) {
+      $grants['custom_group_access_authenticated'][] = $gid;
+    }
+  }
+  //all with prio 1 so we override the OG and/or NAUR functionality
+  return $grants;
+}
