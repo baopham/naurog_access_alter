@@ -1,4 +1,4 @@
-Access Alter
+NAUROG Access Alter
 ============
 Module to hack access between 2 modules "Organic group" and "Node access user reference"
 

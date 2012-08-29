@@ -1,5 +1,13 @@
 <?php
-function access_alter_node_access_records_alter(&$grants, $node) {
+
+/**
+ * @file
+ */
+
+/**
+ * Implements hook_node_access_records_alter()
+ */
+function naurog_access_alter_node_access_records_alter(&$grants, $node) {
   $type = is_string($node) ? $node : $node->type;
   // Get all the referenced fields and their settings
   $nodeaccess_userreference = variable_get('nodeaccess_userreference', array());
@@ -23,7 +31,7 @@ function access_alter_node_access_records_alter(&$grants, $node) {
     }
   }
 
-  // If the node is set to group's default and $og_private is FALSE, then it mean the group is set to public
+  // If the node is set to group's default and $og_private is FALSE, then it means the group is set to public
   // Hence, increase the priority of nodeaccess_userreference_all to 1
   if ($content_access == OG_CONTENT_ACCESS_DEFAULT && !$og_private) {
     foreach ($grants as $key => $val) {

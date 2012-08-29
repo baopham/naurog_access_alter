@@ -1,0 +1,3 @@
+name = "NAUROG Access Alter"
+core = 7.x
+files[] = naurog_access_alter.module
